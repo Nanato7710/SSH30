@@ -65,17 +65,15 @@ class ssh30:
                 response_ids[i].append(id_score['corpus_id'])
         return response_ids
 
-    def do(self,top_k:int=100,threshold:int=0.75,return_text:bool=True,return_id:bool=False)-> list[int]:
+    def do(self,top_k:int=100,threshold:int=0.75,return_text:bool=True)-> dict[str,list[list[dict[int,str]]]]:
         """
         top_k : 幾つのレスポンステキストを獲得のか.\
             デフォルトでは100となっている.
         threshold : レスポンステキストを分類する際にどれだけ類似していればいいのか.\
             -1から1が指定できるはずだが、0.5以下にすると何故か処理が終わらないので0.6以上が推奨.\
             デフォルトでは0.75となっている.
-        return_text : 戻り値を文章とするのか.\
+        return_text : 戻り値に文章を含むのか.\
             デフォルトではTrueとなっている.
-        return_id : 戻り値をデータベース上での文章のidとするのか.\
-            デフォルトではFalseとなっている.\
             return_textよりもこちらが優先される.
 
         レスポンステキストを取得し、分類を行った結果を返す.
@@ -101,7 +99,7 @@ class ssh30:
             classified_text_ids.append(util.community_detection(theme_embeddings,threshold=threshold,min_community_size=1))
         
         # util.community_detectionの戻り値はレスポンステキスト内でのidとなっている.
-        # それをreturn_textとreturn_idによってデータベース上でのidまたは文章のどちらかに変換.
+        # それをreturn_textによってデータベース上でのidのみか[idと文章]のどちらかに変換.
         # POINT : I abominate the code here because there are so many statements.
         classified_response:dict[str,list[list[int|str]]] = dict()
         for i,theme in enumerate(classified_text_ids):
@@ -109,9 +107,9 @@ class ssh30:
             for j,community in enumerate(theme):
                 classified_response[self.query_theme[i]].append([])
                 for id in community:
-                    if return_id:
+                    if return_text:
+                        classified_response[self.query_theme[i]][j].append({'id':response_ids[i][id],'body':self.ds.body[response_ids[i][id]]})
+                    else:
                         classified_response[self.query_theme[i]][j].append(response_ids[i][id])
-                    elif return_text:
-                        classified_response[self.query_theme[i]][j].append(self.ds.body[response_ids[i][id]])
 
         return classified_response
