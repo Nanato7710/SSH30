@@ -8,6 +8,8 @@
 
 - [目標](#目標)
   - [エコーチェンバー](#エコーチェンバー)
+- [インストール](#インストール)
+- [使用例](#使用例)
 - [方法](#方法)
   1. [クエリテーマの入力](#1-クエリテーマの入力)
   2. [レスポンステキストの収集](#2-レスポンステキストの収集)
@@ -38,6 +40,157 @@
 </details>
 
 [目次へ戻る:back:](#目次)
+
+## インストール
+
+デフォルトで使用する事前学習済みのモデルとしてHugging Face 上で公開してくだっさている[こちらのモデル](https://huggingface.co/sonoisa/sentence-bert-base-ja-mean-tokens-v2)を指定しています。\
+この場を借りて感謝申し上げます。\
+開発環境は64-bitのPython 3.10、Windows11です。\
+使用しているパッケージはSentence Transformers、PyTorch、NumPyの3つです。文字コードはUTF-8です。\
+インストールの例としてGitHubからクローンする方法を以下に示しておきます。
+
+```console
+nanato7710:~$ git clone https://github.com/Nanato7710/SSH30.git
+```
+
+```console
+nanato7710:~$ cd SSH30
+```
+
+```console
+nanato7710:~/SSH30$ pip install sentence_transformers
+```
+
+デフォルトで指定されているモデルを使用する際は次も実行してください。
+
+```console
+nanato7710:~/SSH30$ pip install fugashi ipadic
+```
+
+## 使用例
+
+ここからの実行環境はGitHubからクローンしてインストール後のローカルリポジトリとします。\
+よって、カレントディレクトリは以下のようになります。
+
+```console
+nanato7710:~/SSH30$ dir
+LICENSE README.md ssh30.py ssh30_sha256.hash
+```
+
+使用するデータセットファイルをJSON形式の下記のようなJSONファイルをカレントディレクトリに作成します。\
+また、実行するPythonのメインファイルも作成します。\
+ファイル名: dataset.json、main.py
+
+```json
+{
+  "body": [
+      "猫様のあの顔つき、あの体のしなやかさ、あの気まぐれさのどれもが素晴らしい",
+      "猫はこの世で一番素晴らしい存在だ",
+      "犬こそ至高。犬こそ正義。犬こそわれらのメシア",
+      "犬は私の人生を豊かにしてくれる",
+      "犬と猫のどちらも素晴らしい",
+      "ハムスターってかわいいよね"
+    ]
+}
+```
+
+```console
+nanato7710:~/SSH30$ dir
+LICENSE  README.md  dataset.json  main.py  ssh30.py  ssh30_sha256.hash
+```
+
+main.pyの中身を示します。
+
+```python:main.py
+from ssh30 import ssh30,Dataset_Type
+import json
+
+# データセットの読み込み
+with open('./dataset.json','r',encoding='utf-8') as fIn:
+  dataset_json = json.load(fIn)
+
+# ssh30を使用するためのDataset_Typeクラスのインスタンスを作成
+dataset = Dataset_Type(body=dataset_json['body'],embeddings=[])
+
+# クエリテーマの作成
+qt = ['猫が好き','犬が好き','犬よりも猫が好きじゃない']
+
+# ssh30クラスのインスタンスを作成
+ssh7710 = ssh30(query_theme=qt,ds=dataset)
+response = ssh7710.do(top_k=3,threshold=0.6)
+
+# 出力のカレントディレクトリへの保存
+with open('./response.json','w+',encoding='utf-8') as fOut:
+  json.dump(response,fOut,ensure_ascii=False,indent=2)
+```
+
+<details>
+<summary>response.json</summary>
+
+```json
+{
+  "猫が好き": [
+    [
+      {
+        "id": 1,
+        "body": "猫はこの世で一番素晴らしい存在だ"
+      },
+      {
+        "id": 0,
+        "body": "猫様のあの顔つき、あの体のしなやかさ、あの気まぐれさのどれもが素晴らしい"
+      }
+    ],
+    [
+      {
+        "id": 4,
+        "body": "犬と猫のどちらも素晴らしい"
+      }
+    ]
+  ],
+  "犬が好き": [
+    [
+      {
+        "id": 3,
+        "body": "犬は私の人生を豊かにしてくれる"
+      }
+    ],
+    [
+      {
+        "id": 2,
+        "body": "犬こそ至高。犬こそ正義。犬こそわれらのメシア"
+      }
+    ],
+    [
+      {
+        "id": 4,
+        "body": "犬と猫のどちらも素晴らしい"
+      }
+    ]
+  ],
+  "犬よりも猫が好きじゃない": [
+    [
+      {
+        "id": 4,
+        "body": "犬と猫のどちらも素晴らしい"
+      }
+    ],
+    [
+      {
+        "id": 2,
+        "body": "犬こそ至高。犬こそ正義。犬こそわれらのメシア"
+      }
+    ],
+    [
+      {
+        "id": 1,
+        "body": "猫はこの世で一番素晴らしい存在だ"
+      }
+    ]
+  ]
+}
+```
+
+</details>
 
 ## 方法
 
